@@ -4,11 +4,10 @@
 -- server (port 5433), NOT the PostgreSQL 12 instance on the default port 5432 —
 -- PG12 reached end of life in November 2024 and holds unrelated databases.
 --
--- Usage (you will be prompted for the postgres superuser password):
+-- Usage — run from the repository root, on ONE line. Backslash line continuations
+-- are bash syntax and do NOT work in cmd.exe:
 --
---   psql -U postgres -h localhost -p 5433 \
---        -v app_password="'choose-a-strong-password'" \
---        -f scripts/setup-database.sql
+--   psql -U postgres -h localhost -p 5433 -v app_password="'yourpassword'" -f scripts/setup-database.sql
 --
 -- Note the nested quotes in -v: psql substitutes :app_password literally, so the
 -- value must carry its own single quotes.
@@ -41,9 +40,8 @@ CREATE SCHEMA IF NOT EXISTS shared     AUTHORIZATION sunbloom;
 \echo ''
 \echo 'Created database sunbloom_dev with schemas: identity, catalog, competency, shared'
 \echo ''
-\echo 'Next, store the connection string in user-secrets (never in appsettings.json):'
+\echo 'Next, store the connection string in user-secrets (never in appsettings.json).'
+\echo 'Run this from the repository root, on ONE line:'
 \echo ''
-\echo '  dotnet user-secrets set "ConnectionStrings:SunBloomDb" \'
-\echo '    "Host=localhost;Port=5433;Database=sunbloom_dev;Username=sunbloom;Password=<the password you chose>" \'
-\echo '    --project src/SunBloom.Api'
+\echo '  dotnet user-secrets set ConnectionStrings:SunBloomDb "Host=localhost;Port=5433;Database=sunbloom_dev;Username=sunbloom;Password=YOURPASSWORD" --project src/SunBloom.Api'
 \echo ''
