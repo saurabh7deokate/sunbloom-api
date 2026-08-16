@@ -8,6 +8,9 @@ using OpenTelemetry.Trace;
 using Serilog;
 using SunBloom.Api.Health;
 using SunBloom.Api.Modules;
+using SunBloom.Api.Security;
+using SunBloom.SharedKernel.Modules;
+using SunBloom.SharedKernel.Ownership;
 using SunBloom.SharedKernel.Time;
 
 const string serviceName = "SunBloom.Api";
@@ -29,6 +32,13 @@ try
 
     // Time is injected, never ambient. Scoring applies decay, so "now" is a domain input.
     builder.Services.AddSingleton<IClock, SystemClock>();
+
+    builder.Services.AddHttpContextAccessor();
+    builder.Services.AddScoped<ICurrentUser, HttpContextCurrentUser>();
+
+    // Modules register their own named policies; this only enables the middleware.
+    builder.Services.AddRateLimiter(options =>
+        options.RejectionStatusCode = StatusCodes.Status429TooManyRequests);
 
     // RFC 9457 Problem Details for every error response.
     builder.Services.AddProblemDetails();
@@ -58,9 +68,17 @@ try
     app.UseExceptionHandler();
     app.UseStatusCodePages();
 
+    app.UseRateLimiter();
+    app.UseAuthentication();
+    app.UseAuthorization();
+
     if (app.Environment.IsDevelopment())
     {
         app.MapOpenApi();
+
+        // Dev convenience only. Production applies migrations as a deliberate
+        // deployment step, never as a side effect of a process starting.
+        await MigrateModuleDatabasesAsync(app);
     }
 
     // Liveness: is the process up? Readiness: can it actually serve traffic?
@@ -96,6 +114,17 @@ catch (Exception ex)
 finally
 {
     await Log.CloseAndFlushAsync();
+}
+
+static async Task MigrateModuleDatabasesAsync(WebApplication app)
+{
+    await using var scope = app.Services.CreateAsyncScope();
+
+    foreach (var migrator in scope.ServiceProvider.GetServices<IModuleDatabaseMigrator>())
+    {
+        await migrator.MigrateAsync(CancellationToken.None);
+        Log.Information("Applied migrations for {Module}", migrator.ModuleName);
+    }
 }
 
 static Task WriteHealthResponseAsync(HttpContext context, HealthReport report)

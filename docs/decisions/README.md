@@ -25,6 +25,7 @@ someone — human or agent — who lacks the context that produced it.
 | [0008](0008-defer-redis-docker-external-idp.md) | Defer Redis, Docker, brokers, external IdP | Each deferral has a named adoption trigger |
 | [0009](0009-angular-signals-not-ngrx.md) | Angular signals, not NgRx | Less ceremony; SignalStore is the escalation path |
 | [0010](0010-immutable-approved-career-path-versions.md) | Approved career path versions are immutable | Makes historical assessments reproducible |
+| [0011](0011-password-hashing-without-full-aspnet-identity.md) | `PasswordHasher<T>` only, not the full Identity stack | Vetted hashing, our own schema, zero new dependencies |
 
 ## The three that carry the most weight
 

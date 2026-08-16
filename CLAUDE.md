@@ -107,24 +107,42 @@ Connection strings and JWT signing keys live in `dotnet user-secrets`, never in
 psql -U postgres -h localhost -p 5433 \
      -v app_password="'your-password'" -f scripts/setup-database.sql
 
-# 2. Store the connection string outside the repo
-dotnet user-secrets set "ConnectionStrings:SunBloomDb" \
-  "Host=localhost;Port=5433;Database=sunbloom_dev;Username=sunbloom;Password=your-password" \
-  --project src/SunBloom.Api
+# 2. Store secrets outside the repo (one line each)
+dotnet user-secrets set "ConnectionStrings:SunBloomDb" "Host=localhost;Port=5433;Database=sunbloom_dev;Username=sunbloom;Password=your-password" --project src/SunBloom.Api
+dotnet user-secrets set "Jwt:SigningKey" "$(openssl rand -base64 48)" --project src/SunBloom.Api
 
 # 3. Verify
+dotnet tool restore                            # dotnet-ef is a pinned local tool
 dotnet test                                    # architecture tests must pass
 dotnet run --project src/SunBloom.Api          # then GET /health/ready
 ```
 
+Migrations apply automatically **in Development only**. In any other environment they
+are a deliberate deployment step.
+
 The solution file is **`SunBloom.slnx`** — the .NET 10 XML format, not `.sln`.
+
+## Gotchas that have already cost time
+
+- **Check the build's exit code, not grep's.** `dotnet build | grep error && dotnet run
+  --no-build` runs a *stale* assembly on failure, because `&&` sees grep's status.
+- **Stop the running API before building.** It locks the module DLLs and the build fails
+  with MSB3027.
+- **`dotnet ef migrations add` output is exempt from style rules** via `.editorconfig`
+  (`[**/Migrations/*.cs]`). Without that, generated migrations fail the build on IDE0161.
+- **EF migration classes are public by design**, so `ModuleBoundaryTests` exempts the
+  `.Migrations` namespace.
 
 ## Current state
 
-**Sub-slice 1.1 complete.** Solution skeleton, four modules wired through `IModule`,
-health checks, Serilog, OpenTelemetry, architecture tests, CI. No domain code yet.
+**Sub-slices 1.1 and 1.2 complete.**
 
-Next: **1.2 — Identity** (register, login, JWT with refresh rotation). See
-`docs/ROADMAP.md`. Target career path for the first complete vertical is **.NET Backend
-Developer**, chosen because the owner can personally judge whether the generated content
-is any good.
+- 1.1 — skeleton, four modules via `IModule`, health checks, Serilog, OpenTelemetry,
+  architecture tests, CI
+- 1.2 — Identity: register, login, JWT, refresh rotation with family revocation on
+  reuse, rate limiting, `IOwnedByUser` enforcement
+
+Next: **1.3 — Catalog** (skill graph schema, ~30 hand-authored .NET skills, tree API).
+See `docs/ROADMAP.md`. Target career path for the first complete vertical is **.NET
+Backend Developer**, chosen because the owner can personally judge whether the generated
+content is any good.

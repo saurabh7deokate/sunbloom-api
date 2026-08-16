@@ -23,7 +23,9 @@ public class ModuleBoundaryTests
         {
             var offenders = assembly
                 .GetExportedTypes()
-                .Where(type => !IsInContractsNamespace(type) && !IsModuleEntryPoint(type))
+                .Where(type => !IsInContractsNamespace(type)
+                    && !IsModuleEntryPoint(type)
+                    && !IsGeneratedMigration(type))
                 .Select(type => $"{assembly.GetName().Name}: {type.FullName}");
 
             violations.AddRange(offenders);
@@ -77,4 +79,10 @@ public class ModuleBoundaryTests
 
     // The IModule implementation must be public so the host can construct it.
     private static bool IsModuleEntryPoint(Type type) => typeof(IModule).IsAssignableFrom(type);
+
+    // EF Core generates migrations and model snapshots as public types and requires
+    // them to stay that way. They are generated artifacts, not module surface — no
+    // other module can meaningfully consume them.
+    private static bool IsGeneratedMigration(Type type) =>
+        type.Namespace?.Contains(".Migrations", StringComparison.Ordinal) == true;
 }

@@ -22,7 +22,7 @@ a domain you don't know well is rubber-stamping with extra steps.
 | # | Deliverable | Done when |
 |---|---|---|
 | **1.1** ✅ | Solution skeleton: 4 module projects, host, SharedKernel, `IModule` wiring, health checks, Serilog, OpenTelemetry, architecture tests, CI | **Done.** `/health/live` returns 200; `/health/ready` returns 503 with an actionable message until the database is configured; 8 architecture tests pass, and were verified to fail against a deliberate violation |
-| **1.2** | Identity: register, login, JWT + refresh rotation, `IOwnedByUser` filter infrastructure | A user registers, logs in, calls an authenticated endpoint; a replayed refresh token revokes the family |
+| **1.2** ✅ | Identity: register, login, JWT + refresh rotation, `IOwnedByUser` filter infrastructure | **Done.** Register → login → authenticated `/me` all verified end to end; a replayed refresh token revokes the whole family, killing the newer token too; rate limiting measured at exactly 10/min; both ownership guardrails verified against deliberate violations |
 | **1.3** | Catalog schema + skill graph API; ~30 hand-authored .NET skills as a seed | Skill tree renders; recursive CTE returns a subtree; cycle rejection is tested |
 | **1.4** | Angular shell: scaffold, auth, routing, layout, generated API types | Log in, see the skill tree, refresh the page and stay logged in |
 | **1.5** | Content generator CLI + review workflow; expand to the full .NET tree | Generate → review → approve; only approved content is served |
