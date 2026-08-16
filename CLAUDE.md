@@ -135,14 +135,22 @@ The solution file is **`SunBloom.slnx`** — the .NET 10 XML format, not `.sln`.
 
 ## Current state
 
-**Sub-slices 1.1 and 1.2 complete.**
+**Sub-slices 1.1, 1.2, and 1.3 complete.** 31 tests passing.
 
 - 1.1 — skeleton, four modules via `IModule`, health checks, Serilog, OpenTelemetry,
   architecture tests, CI
 - 1.2 — Identity: register, login, JWT, refresh rotation with family revocation on
   reuse, rate limiting, `IOwnedByUser` enforcement
+- 1.3 — Catalog: global skill graph, typed edges, prerequisite cycle rejection,
+  35 hand-authored .NET skills, tree and detail endpoints
 
-Next: **1.3 — Catalog** (skill graph schema, ~30 hand-authored .NET skills, tree API).
-See `docs/ROADMAP.md`. Target career path for the first complete vertical is **.NET
-Backend Developer**, chosen because the owner can personally judge whether the generated
-content is any good.
+Migrations and seeding run automatically on Development startup. The seeder is
+idempotent by slug, so restarting is safe.
+
+Next: **1.4 — Angular shell** (scaffold, auth, routing, skill tree view, generated API
+types). See `docs/ROADMAP.md`. Target career path for the first complete vertical is
+**.NET Backend Developer**, chosen because the owner can personally judge whether the
+generated content is any good.
+
+**Known gap:** `SkillGraphService.AddRelationshipAsync` is untested — it has no callers
+until write endpoints arrive in 1.5, and gets an integration test then.

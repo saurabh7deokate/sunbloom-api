@@ -79,6 +79,7 @@ try
         // Dev convenience only. Production applies migrations as a deliberate
         // deployment step, never as a side effect of a process starting.
         await MigrateModuleDatabasesAsync(app);
+        await SeedModulesAsync(app);
     }
 
     // Liveness: is the process up? Readiness: can it actually serve traffic?
@@ -124,6 +125,16 @@ static async Task MigrateModuleDatabasesAsync(WebApplication app)
     {
         await migrator.MigrateAsync(CancellationToken.None);
         Log.Information("Applied migrations for {Module}", migrator.ModuleName);
+    }
+}
+
+static async Task SeedModulesAsync(WebApplication app)
+{
+    await using var scope = app.Services.CreateAsyncScope();
+
+    foreach (var seeder in scope.ServiceProvider.GetServices<IModuleSeeder>())
+    {
+        await seeder.SeedAsync(CancellationToken.None);
     }
 }
 

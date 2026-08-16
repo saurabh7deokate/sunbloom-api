@@ -11,5 +11,6 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/SunBloom.ArchitectureTests/SunBloom.ArchitectureTests.csproj" />
+    <Project Path="tests/SunBloom.Modules.Catalog.Tests/SunBloom.Modules.Catalog.Tests.csproj" />
   </Folder>
 </Solution>
