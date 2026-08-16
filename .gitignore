@@ -1,0 +1,74 @@
+## .NET build output
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+artifacts/
+publish/
+*.dll
+*.pdb
+*.exe
+
+## User/IDE-specific
+.vs/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.DotSettings.user
+
+## Test and coverage
+[Tt]est[Rr]esult*/
+coverage*.json
+coverage*.xml
+coverage*.info
+*.coverage
+*.trx
+
+## Secrets and local configuration — never commit these.
+## Connection strings and JWT signing keys belong in user-secrets
+## (dotnet user-secrets) or environment variables, never in the repo.
+appsettings.Development.json
+appsettings.Local.json
+appsettings.*.Local.json
+*.env
+.env.*
+!.env.example
+secrets.json
+*.pfx
+*.key
+*.pem
+
+## Content generation output (AI-generated, pre-review).
+## Approved seed data is committed; raw generator output is not.
+/tools/ContentGenerator/output/
+
+## OS noise
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+
+## Logs and local databases
+logs/
+*.log
+*.db
+*.db-shm
+*.db-wal
+
+## NuGet
+*.nupkg
+*.snupkg
+.nuget/
+packages/
+!packages/build/
