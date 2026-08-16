@@ -60,6 +60,12 @@ These exist because they are expensive or impossible to fix later.
 
 5. **No EF entity ever appears in an API contract.** Separate DTOs, always.
 
+5a. **Endpoints return typed result unions** (`Results<Ok<T>, ProblemHttpResult, …>`),
+   never bare `IResult`. An `IResult` handler produces **no response schema** in the
+   OpenAPI document, which silently breaks the Angular client's generated types — the
+   entire mitigation for the two-repo split (ADR-0007). Regenerate the committed
+   `openapi/sunbloom-api.json` whenever a contract changes.
+
 6. **No `DateTime.Now` / `DateTime.UtcNow` in domain or application code.** Inject
    `IClock`. Scoring involves time decay; untestable time makes it unverifiable.
 
@@ -135,7 +141,7 @@ The solution file is **`SunBloom.slnx`** — the .NET 10 XML format, not `.sln`.
 
 ## Current state
 
-**Sub-slices 1.1, 1.2, and 1.3 complete.** 31 tests passing.
+**Sub-slices 1.1–1.4 complete.** 31 backend tests, plus 6 unit and 4 E2E in the UI.
 
 - 1.1 — skeleton, four modules via `IModule`, health checks, Serilog, OpenTelemetry,
   architecture tests, CI
@@ -147,10 +153,12 @@ The solution file is **`SunBloom.slnx`** — the .NET 10 XML format, not `.sln`.
 Migrations and seeding run automatically on Development startup. The seeder is
 idempotent by slug, so restarting is safe.
 
-Next: **1.4 — Angular shell** (scaffold, auth, routing, skill tree view, generated API
-types). See `docs/ROADMAP.md`. Target career path for the first complete vertical is
-**.NET Backend Developer**, chosen because the owner can personally judge whether the
-generated content is any good.
+- 1.4 — Angular shell: auth flow, route guards, skill tree and detail, TypeScript types
+  generated from `openapi/sunbloom-api.json`
+
+Next: **1.5 — content generator CLI and review workflow**. See `docs/ROADMAP.md`. Target
+career path for the first complete vertical is **.NET Backend Developer**, chosen because
+the owner can personally judge whether the generated content is any good.
 
 **Known gap:** `SkillGraphService.AddRelationshipAsync` is untested — it has no callers
 until write endpoints arrive in 1.5, and gets an integration test then.

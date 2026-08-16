@@ -1,6 +1,7 @@
 using System.Net.Mail;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using SunBloom.Modules.Identity.Application;
@@ -10,6 +11,17 @@ using SunBloom.SharedKernel.Ownership;
 
 namespace SunBloom.Modules.Identity.Endpoints;
 
+/// <summary>
+/// Authentication endpoints.
+/// </summary>
+/// <remarks>
+/// Handlers return <c>Results&lt;...&gt;</c> unions rather than <c>IResult</c> so every
+/// response type appears in the OpenAPI document. That matters more here than usual:
+/// the Angular client's TypeScript types are generated from that document (ADR-0007),
+/// and an untyped <c>IResult</c> produces an endpoint with no response schema at all —
+/// silently defeating the generation the two-repo split depends on. The union is also
+/// compile-checked, so a handler cannot return a shape it did not declare.
+/// </remarks>
 internal static class AuthEndpoints
 {
     private const int MinimumPasswordLength = 12;
@@ -31,7 +43,7 @@ internal static class AuthEndpoints
             .WithSummary("The authenticated user.");
     }
 
-    private static async Task<IResult> RegisterAsync(
+    private static async Task<Results<Created<AuthResponse>, ValidationProblem, ProblemHttpResult>> RegisterAsync(
         RegisterRequest request,
         AuthService auth,
         CancellationToken ct)
@@ -40,24 +52,24 @@ internal static class AuthEndpoints
 
         if (errors.Count > 0)
         {
-            return Results.ValidationProblem(errors);
+            return TypedResults.ValidationProblem(errors);
         }
 
         var outcome = await auth.RegisterAsync(request, ct);
 
         return outcome.Error is null
-            ? Results.Created($"/api/v1/users/{outcome.Response!.User.Id}", outcome.Response)
+            ? TypedResults.Created($"/api/v1/users/{outcome.Response!.User.Id}", outcome.Response)
             : ToProblem(outcome.Error.Value);
     }
 
-    private static async Task<IResult> LoginAsync(
+    private static async Task<Results<Ok<AuthResponse>, ValidationProblem, ProblemHttpResult>> LoginAsync(
         LoginRequest request,
         AuthService auth,
         CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrEmpty(request.Password))
         {
-            return Results.ValidationProblem(new Dictionary<string, string[]>
+            return TypedResults.ValidationProblem(new Dictionary<string, string[]>(StringComparer.Ordinal)
             {
                 ["credentials"] = ["Email and password are required."],
             });
@@ -66,18 +78,18 @@ internal static class AuthEndpoints
         var outcome = await auth.LoginAsync(request, ct);
 
         return outcome.Error is null
-            ? Results.Ok(outcome.Response)
+            ? TypedResults.Ok(outcome.Response!)
             : ToProblem(outcome.Error.Value);
     }
 
-    private static async Task<IResult> RefreshAsync(
+    private static async Task<Results<Ok<AuthResponse>, ValidationProblem, ProblemHttpResult>> RefreshAsync(
         RefreshRequest request,
         AuthService auth,
         CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(request.RefreshToken))
         {
-            return Results.ValidationProblem(new Dictionary<string, string[]>
+            return TypedResults.ValidationProblem(new Dictionary<string, string[]>(StringComparer.Ordinal)
             {
                 [nameof(request.RefreshToken)] = ["A refresh token is required."],
             });
@@ -86,11 +98,11 @@ internal static class AuthEndpoints
         var outcome = await auth.RefreshAsync(request, ct);
 
         return outcome.Error is null
-            ? Results.Ok(outcome.Response)
+            ? TypedResults.Ok(outcome.Response!)
             : ToProblem(outcome.Error.Value);
     }
 
-    private static async Task<IResult> LogoutAsync(
+    private static async Task<NoContent> LogoutAsync(
         RefreshRequest request,
         AuthService auth,
         CancellationToken ct)
@@ -98,17 +110,17 @@ internal static class AuthEndpoints
         await auth.LogoutAsync(request, ct);
 
         // Always 204: revealing whether the token existed would leak token validity.
-        return Results.NoContent();
+        return TypedResults.NoContent();
     }
 
-    private static async Task<IResult> GetCurrentUserAsync(
+    private static async Task<Results<Ok<UserResponse>, UnauthorizedHttpResult>> GetCurrentUserAsync(
         ICurrentUser currentUser,
         IdentityDbContext db,
         CancellationToken ct)
     {
         if (currentUser.UserId is not { } userId)
         {
-            return Results.Unauthorized();
+            return TypedResults.Unauthorized();
         }
 
         var user = await db.Users
@@ -117,7 +129,7 @@ internal static class AuthEndpoints
                 candidate.Id, candidate.Email, candidate.DisplayName, candidate.TimeZone))
             .FirstOrDefaultAsync(ct);
 
-        return user is null ? Results.Unauthorized() : Results.Ok(user);
+        return user is null ? TypedResults.Unauthorized() : TypedResults.Ok(user);
     }
 
     private static Dictionary<string, string[]> ValidateRegistration(RegisterRequest request)
@@ -145,31 +157,28 @@ internal static class AuthEndpoints
         return errors;
     }
 
-    private static bool IsValidEmail(string email)
-    {
-        // MailAddress is stricter and better maintained than any regex worth writing here.
-        return MailAddress.TryCreate(email.Trim(), out _);
-    }
+    // MailAddress is stricter and better maintained than any regex worth writing here.
+    private static bool IsValidEmail(string email) => MailAddress.TryCreate(email.Trim(), out _);
 
-    private static IResult ToProblem(AuthError error) => error switch
+    private static ProblemHttpResult ToProblem(AuthError error) => error switch
     {
-        AuthError.EmailAlreadyRegistered => Results.Problem(
+        AuthError.EmailAlreadyRegistered => TypedResults.Problem(
             title: "Email already registered",
             detail: "An account already exists for this email address.",
             statusCode: StatusCodes.Status409Conflict),
 
         // Both credential failures return the same response so neither reveals whether
         // the account exists.
-        AuthError.InvalidCredentials => Results.Problem(
+        AuthError.InvalidCredentials => TypedResults.Problem(
             title: "Invalid credentials",
             detail: "The email address or password is incorrect.",
             statusCode: StatusCodes.Status401Unauthorized),
 
-        AuthError.InvalidRefreshToken => Results.Problem(
+        AuthError.InvalidRefreshToken => TypedResults.Problem(
             title: "Invalid refresh token",
             detail: "The refresh token is invalid, expired, or has already been used.",
             statusCode: StatusCodes.Status401Unauthorized),
 
-        _ => Results.Problem(statusCode: StatusCodes.Status500InternalServerError),
+        _ => TypedResults.Problem(statusCode: StatusCodes.Status500InternalServerError),
     };
 }
