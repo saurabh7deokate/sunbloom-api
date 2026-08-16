@@ -75,7 +75,7 @@ is a boundary that survives exactly as long as someone remembers it. A project
 reference and an `internal` access modifier are boundaries the compiler defends.
 
 ```
-SunBloom.sln
+SunBloom.slnx                            .NET 10 XML solution format, not .sln
 ├── src/
 │   ├── SunBloom.Api/                    Host. Composition root. No business logic.
 │   ├── SunBloom.SharedKernel/           Result, strongly-typed IDs, IClock,

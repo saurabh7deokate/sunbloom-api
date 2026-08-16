@@ -1,0 +1,23 @@
+# Normalize line endings in the repository; check out native on each platform.
+# CI runs on Ubuntu while development is on Windows, so this keeps diffs clean.
+* text=auto
+
+*.cs        text diff=csharp
+*.csproj    text
+*.props     text
+*.targets   text
+*.slnx      text
+*.json      text
+*.yml       text
+*.md        text
+*.sql       text
+
+# Shell scripts must keep LF or they break on Linux.
+*.sh        text eol=lf
+
+# Binary
+*.png binary
+*.jpg binary
+*.ico binary
+*.pfx binary
+*.dll binary

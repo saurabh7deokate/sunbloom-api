@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\SunBloom.SharedKernel\SunBloom.SharedKernel.csproj" />
+    <ProjectReference Include="..\..\src\Modules\SunBloom.Modules.Identity\SunBloom.Modules.Identity.csproj" />
+    <ProjectReference Include="..\..\src\Modules\SunBloom.Modules.Catalog\SunBloom.Modules.Catalog.csproj" />
+    <ProjectReference Include="..\..\src\Modules\SunBloom.Modules.Competency\SunBloom.Modules.Competency.csproj" />
+    <ProjectReference Include="..\..\src\Modules\SunBloom.Modules.Recommendations\SunBloom.Modules.Recommendations.csproj" />
+    <ProjectReference Include="..\..\src\SunBloom.Api\SunBloom.Api.csproj" />
+  </ItemGroup>
+
+</Project>

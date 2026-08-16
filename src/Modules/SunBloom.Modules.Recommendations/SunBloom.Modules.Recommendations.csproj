@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\SunBloom.SharedKernel\SunBloom.SharedKernel.csproj" />
+  </ItemGroup>
+
+  <!-- Recommendations reads from Catalog and Competency. Only their Contracts
+       namespaces are public, so this reference cannot reach their internals. -->
+  <ItemGroup>
+    <ProjectReference Include="..\SunBloom.Modules.Catalog\SunBloom.Modules.Catalog.csproj" />
+    <ProjectReference Include="..\SunBloom.Modules.Competency\SunBloom.Modules.Competency.csproj" />
+  </ItemGroup>
+
+</Project>

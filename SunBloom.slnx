@@ -1,0 +1,15 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/SunBloom.Api/SunBloom.Api.csproj" />
+    <Project Path="src/SunBloom.SharedKernel/SunBloom.SharedKernel.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/">
+    <Project Path="src/Modules/SunBloom.Modules.Catalog/SunBloom.Modules.Catalog.csproj" />
+    <Project Path="src/Modules/SunBloom.Modules.Competency/SunBloom.Modules.Competency.csproj" />
+    <Project Path="src/Modules/SunBloom.Modules.Identity/SunBloom.Modules.Identity.csproj" />
+    <Project Path="src/Modules/SunBloom.Modules.Recommendations/SunBloom.Modules.Recommendations.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/SunBloom.ArchitectureTests/SunBloom.ArchitectureTests.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- IModule needs IEndpointRouteBuilder. Domain code must still not touch
+       ASP.NET types - that is enforced by LayeringTests, not by this reference. -->
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+</Project>

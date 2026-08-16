@@ -85,13 +85,46 @@ These exist because they are expensive or impossible to fix later.
 
 ## Environment
 
-.NET 10.0.302 · PostgreSQL 18.4 running locally (no Docker installed) · Node v20.19.0
+.NET 10.0.302 · no Docker installed · Node v20.19.0
 
-Local Postgres is the dev database. Connection strings and JWT signing keys live in
-`dotnet user-secrets`, never in `appsettings.json`.
+**Two PostgreSQL servers run on this machine. Use the right one.**
+
+| Port | Version | Use |
+|---:|---|---|
+| 5432 | PostgreSQL **12.17** | ❌ Not ours. End-of-life since Nov 2024, holds unrelated databases |
+| **5433** | PostgreSQL **18.4** | ✅ SunBloom |
+
+`psql` on PATH is the 18.4 client, so `psql --version` reports 18.4 while connecting to
+the *12.17* server by default. Always pass `-p 5433` explicitly.
+
+Connection strings and JWT signing keys live in `dotnet user-secrets`, never in
+`appsettings.json`.
+
+## Getting started
+
+```bash
+# 1. Create the database and role (choose your own password)
+psql -U postgres -h localhost -p 5433 \
+     -v app_password="'your-password'" -f scripts/setup-database.sql
+
+# 2. Store the connection string outside the repo
+dotnet user-secrets set "ConnectionStrings:SunBloomDb" \
+  "Host=localhost;Port=5433;Database=sunbloom_dev;Username=sunbloom;Password=your-password" \
+  --project src/SunBloom.Api
+
+# 3. Verify
+dotnet test                                    # architecture tests must pass
+dotnet run --project src/SunBloom.Api          # then GET /health/ready
+```
+
+The solution file is **`SunBloom.slnx`** — the .NET 10 XML format, not `.sln`.
 
 ## Current state
 
-Phase 1, slice 1 — see `docs/ROADMAP.md`. Target career path for the first complete
-vertical is **.NET Backend Developer**, chosen because the owner can personally judge
-whether the generated content is any good.
+**Sub-slice 1.1 complete.** Solution skeleton, four modules wired through `IModule`,
+health checks, Serilog, OpenTelemetry, architecture tests, CI. No domain code yet.
+
+Next: **1.2 — Identity** (register, login, JWT with refresh rotation). See
+`docs/ROADMAP.md`. Target career path for the first complete vertical is **.NET Backend
+Developer**, chosen because the owner can personally judge whether the generated content
+is any good.

@@ -5,6 +5,10 @@
 DDL below is design intent, not migration source. Migrations are generated from EF
 Core model configuration; this document is what those configurations must produce.
 
+> **Local development:** PostgreSQL 18 listens on **port 5433** on this machine. Port
+> 5432 is a separate PostgreSQL 12 instance that is end-of-life and unrelated to
+> SunBloom. Run `scripts/setup-database.sql` against 5433.
+
 ---
 
 ## 1. Conventions
