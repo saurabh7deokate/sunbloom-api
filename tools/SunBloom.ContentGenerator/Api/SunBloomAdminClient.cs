@@ -79,6 +79,36 @@ internal sealed class SunBloomAdminClient(
         return true;
     }
 
+    /// <summary>
+    /// Every slug in the graph, including rejected ones, with rejection reasons.
+    /// </summary>
+    /// <remarks>
+    /// Rejected skills appear in neither the approved tree nor the pending queue, yet
+    /// their slugs stay permanently occupied. Without this the model re-proposes rejected
+    /// content on every run — the API answers 409 so nothing breaks, but each repeat
+    /// wastes a slot in the batch and the reviewer's attention on something already
+    /// judged.
+    /// </remarks>
+    public async Task<(IReadOnlyList<string> Slugs, IReadOnlyList<RejectedSkill> Rejected)>
+        GetSlugIndexAsync(CancellationToken ct)
+    {
+        using var response = await SendAsync(HttpMethod.Get, "/api/v1/admin/skills/slugs", null, ct);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            return ([], []);
+        }
+
+        var index = await response.Content.ReadFromJsonAsync<JsonElement>(Json, ct);
+
+        return (
+            [.. index.GetProperty("allSlugs").EnumerateArray().Select(slug => slug.GetString()!)],
+            [.. index.GetProperty("rejected").EnumerateArray().Select(item => new RejectedSkill(
+                item.GetProperty("slug").GetString()!,
+                item.GetProperty("name").GetString()!,
+                item.TryGetProperty("notes", out var notes) ? notes.GetString() : null))]);
+    }
+
     public async Task<IReadOnlyList<SkillNode>> GetAllSkillsAsync(CancellationToken ct)
     {
         // The admin queue plus the approved tree together cover every skill: pending
@@ -238,3 +268,5 @@ internal sealed class SunBloomAdminClient(
 }
 
 internal sealed record SkillNode(string Slug, string Name, string Kind, string? Description);
+
+internal sealed record RejectedSkill(string Slug, string Name, string? Notes);

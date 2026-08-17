@@ -30,6 +30,10 @@ internal static partial class GeneratorLog
         Message = "Model proposed {Count} skill(s)")]
     public static partial void ModelProposed(ILogger logger, int count);
 
+    [LoggerMessage(EventId = 3014, Level = LogLevel.Information,
+        Message = "Feeding back {Count} previous rejection(s) so they are not re-proposed")]
+    public static partial void FeedingBackRejections(ILogger logger, int count);
+
     [LoggerMessage(EventId = 3012, Level = LogLevel.Information,
         Message = "  created {Slug} ({ReviewState})")]
     public static partial void SkillCreated(ILogger logger, string slug, string reviewState);

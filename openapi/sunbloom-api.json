@@ -326,6 +326,26 @@
                 }
             }
         },
+        "/api/v1/admin/skills/slugs": {
+            "get": {
+                "tags": [
+                    "Skill administration"
+                ],
+                "summary": "Every slug in the graph plus rejection reasons, for the generator.",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CatalogSlugIndex"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/admin/skills/{slug}/approve": {
             "post": {
                 "tags": [
@@ -457,6 +477,27 @@
                     },
                     "user": {
                         "$ref": "#/components/schemas/UserResponse"
+                    }
+                }
+            },
+            "CatalogSlugIndex": {
+                "required": [
+                    "allSlugs",
+                    "rejected"
+                ],
+                "type": "object",
+                "properties": {
+                    "allSlugs": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "rejected": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/RejectedSkill"
+                        }
                     }
                 }
             },
@@ -639,6 +680,28 @@
                         "type": "string"
                     },
                     "timeZone": {
+                        "type": [
+                            "null",
+                            "string"
+                        ]
+                    }
+                }
+            },
+            "RejectedSkill": {
+                "required": [
+                    "slug",
+                    "name",
+                    "notes"
+                ],
+                "type": "object",
+                "properties": {
+                    "slug": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "notes": {
                         "type": [
                             "null",
                             "string"

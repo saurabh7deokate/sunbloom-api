@@ -18,7 +18,11 @@ internal sealed record GeneratedPrerequisiteSet(IReadOnlyList<GeneratedPrerequis
 /// </remarks>
 internal static class SkillPrompts
 {
-    public const string Version = "skills-v1";
+    /// <summary>
+    /// v2 feeds previously-rejected skills and their reasons back into the prompt, so a
+    /// human's rejection actually teaches the next run instead of being re-proposed.
+    /// </summary>
+    public const string Version = "skills-v2";
 
     /// <summary>
     /// Shared framing. The duplicate-avoidance rule is the load-bearing part: skills are
@@ -93,6 +97,7 @@ internal static class SkillPrompts
         string parentDescription,
         string parentKind,
         IReadOnlyList<string> existingSlugs,
+        IReadOnlyList<(string Slug, string Name, string? Notes)> rejected,
         int target) =>
         $"""
          Generate the direct child skills of this node in a .NET backend engineering taxonomy.
@@ -107,7 +112,38 @@ internal static class SkillPrompts
          These slugs already exist somewhere in the graph. Do not emit any of them, and do not
          emit a near-synonym of one:
          {string.Join(", ", existingSlugs)}
+         {RejectedSection(rejected)}
          """;
+
+    /// <summary>
+    /// Past rejections, with the reviewer's reason where one was given.
+    /// </summary>
+    /// <remarks>
+    /// This is what makes review a feedback loop rather than a filter. Without it the
+    /// model re-proposes rejected skills indefinitely and the reviewer re-rejects them.
+    /// The reason matters more than the slug: it generalises, so a note like "too
+    /// specialised for a backend path" steers away from a whole class of proposals rather
+    /// than one name.
+    /// </remarks>
+    private static string RejectedSection(IReadOnlyList<(string Slug, string Name, string? Notes)> rejected)
+    {
+        if (rejected.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        var lines = rejected.Select(item => string.IsNullOrWhiteSpace(item.Notes)
+            ? $"- {item.Name} ({item.Slug})"
+            : $"- {item.Name} ({item.Slug}) — rejected because: {item.Notes}");
+
+        return $"""
+
+
+                A human reviewer previously rejected these proposals. Do not emit them again,
+                and treat the stated reasons as guidance about what does not belong here:
+                {string.Join("\n", lines)}
+                """;
+    }
 
     /// <summary>
     /// Prerequisites are generated separately from the hierarchy, and deliberately so:

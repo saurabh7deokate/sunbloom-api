@@ -200,6 +200,35 @@ internal sealed class SkillAdminService(CatalogDbContext db, SkillGraphService g
             shallowest);
     }
 
+    /// <summary>
+    /// Every slug in the graph, plus the rejected ones with their reasons.
+    /// </summary>
+    /// <remarks>
+    /// Deliberately unfiltered by review state. This is the one query whose whole purpose
+    /// is to see content the learner-facing API hides — a rejected slug still occupies its
+    /// name forever, so a generator that cannot see it will keep proposing it.
+    /// </remarks>
+    public async Task<CatalogSlugIndex> GetSlugIndexAsync(CancellationToken ct)
+    {
+        var all = await db.Skills
+            .AsNoTracking()
+            .Select(skill => new
+            {
+                skill.Slug,
+                skill.Name,
+                skill.Provenance.ReviewState,
+                skill.Provenance.ReviewNotes,
+            })
+            .ToListAsync(ct);
+
+        return new CatalogSlugIndex(
+            [.. all.Select(skill => skill.Slug).Order(StringComparer.Ordinal)],
+            [.. all
+                .Where(skill => skill.ReviewState == ReviewState.Rejected)
+                .Select(skill => new RejectedSkill(skill.Slug, skill.Name, skill.ReviewNotes))
+                .OrderBy(skill => skill.Slug, StringComparer.Ordinal)]);
+    }
+
     private Task<Skill?> FindAsync(string slug, CancellationToken ct)
     {
         var normalized = slug.Trim().ToLowerInvariant();

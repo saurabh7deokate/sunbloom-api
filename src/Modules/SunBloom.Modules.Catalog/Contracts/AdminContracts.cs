@@ -56,3 +56,26 @@ public sealed record PendingReviewPage(
     IReadOnlyList<SkillAdminView> Items,
     int TotalPending,
     int Depth);
+
+/// <param name="Slug">The rejected slug — still occupied, so it can never be recreated.</param>
+/// <param name="Notes">Why it was rejected. Fed back into the next generation prompt.</param>
+public sealed record RejectedSkill(string Slug, string Name, string? Notes);
+
+/// <summary>
+/// Every slug in the graph, whatever its review state, plus why the rejected ones were.
+/// </summary>
+/// <remarks>
+/// The generator needs this to avoid re-proposing content. Approved and pending skills
+/// are already reachable through the tree and the review queue, but *rejected* ones are
+/// in neither — so without this a rejected skill is proposed again on every run. The API
+/// blocks the write with a 409, so nothing corrupts, but each repeat silently costs a
+/// slot in the batch and a moment of the reviewer's attention.
+/// <para>
+/// Returning the rejection notes is what turns review into a feedback loop: the reason a
+/// human gave for rejecting something becomes an instruction in the next prompt, instead
+/// of a note nobody reads again.
+/// </para>
+/// </remarks>
+public sealed record CatalogSlugIndex(
+    IReadOnlyList<string> AllSlugs,
+    IReadOnlyList<RejectedSkill> Rejected);

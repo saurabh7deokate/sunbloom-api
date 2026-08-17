@@ -35,6 +35,9 @@ internal static class SkillAdminEndpoints
         group.MapGet("/pending", GetPendingAsync)
             .WithSummary("The review queue, shallowest containment depth first.");
 
+        group.MapGet("/slugs", GetSlugIndexAsync)
+            .WithSummary("Every slug in the graph plus rejection reasons, for the generator.");
+
         group.MapPost("/{slug}/approve", ApproveAsync).WithSummary("Approve a draft skill.");
         group.MapPost("/{slug}/reject", RejectAsync).WithSummary("Reject a draft skill.");
     }
@@ -62,6 +65,11 @@ internal static class SkillAdminEndpoints
             ? TypedResults.Ok(outcome.Value!)
             : ToProblem(outcome.Error.Value, outcome.Detail);
     }
+
+    private static async Task<Ok<CatalogSlugIndex>> GetSlugIndexAsync(
+        SkillAdminService admin,
+        CancellationToken ct) =>
+        TypedResults.Ok(await admin.GetSlugIndexAsync(ct));
 
     private static async Task<Ok<PendingReviewPage>> GetPendingAsync(
         SkillAdminService admin,

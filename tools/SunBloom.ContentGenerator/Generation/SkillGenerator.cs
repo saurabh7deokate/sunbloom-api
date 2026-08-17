@@ -35,13 +35,23 @@ internal sealed class SkillGenerator(
             return new RunTotals(0, 0, 0);
         }
 
-        GeneratorLog.GeneratingChildren(logger, parentSlug, existing.Count);
+        // The slug index includes rejected skills, which appear in neither the approved
+        // tree nor the pending queue but still own their names permanently.
+        var (allSlugs, rejected) = await api.GetSlugIndexAsync(ct);
+
+        GeneratorLog.GeneratingChildren(logger, parentSlug, allSlugs.Count);
+
+        if (rejected.Count > 0)
+        {
+            GeneratorLog.FeedingBackRejections(logger, rejected.Count);
+        }
 
         var prompt = SkillPrompts.ChildrenPrompt(
             parent.Name,
             parent.Description ?? parent.Name,
             parent.Kind,
-            [.. existing.Select(skill => skill.Slug)],
+            allSlugs,
+            [.. rejected.Select(item => (item.Slug, item.Name, item.Notes))],
             target);
 
         var result = await completion.CompleteAsync<GeneratedSkillSet>(
