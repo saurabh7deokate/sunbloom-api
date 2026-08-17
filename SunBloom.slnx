@@ -13,4 +13,7 @@
     <Project Path="tests/SunBloom.ArchitectureTests/SunBloom.ArchitectureTests.csproj" />
     <Project Path="tests/SunBloom.Modules.Catalog.Tests/SunBloom.Modules.Catalog.Tests.csproj" />
   </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/SunBloom.ContentGenerator/SunBloom.ContentGenerator.csproj" />
+  </Folder>
 </Solution>
