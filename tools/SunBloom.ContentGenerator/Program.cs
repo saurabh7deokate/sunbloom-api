@@ -45,17 +45,33 @@ services.AddLogging(builder => builder
         console.SingleLine = true;
         console.TimestampFormat = "HH:mm:ss ";
     })
-    .SetMinimumLevel(LogLevel.Information));
+    .SetMinimumLevel(LogLevel.Information)
+    // The per-request handler logs bury the generation output they surround.
+    .AddFilter("System.Net.Http.HttpClient", LogLevel.Warning));
 
 services.AddSingleton(gemini);
 services.AddSingleton(sunbloom);
 
 // Generation calls are slow by nature; the default 100s timeout truncates them.
-services.AddHttpClient<IStructuredCompletion, GeminiStructuredCompletion>(
-    client => client.Timeout = TimeSpan.FromMinutes(5));
+services.AddHttpClient(GeminiClientName, client => client.Timeout = TimeSpan.FromMinutes(5));
+services.AddHttpClient(AdminClientName, client => client.Timeout = TimeSpan.FromSeconds(60));
 
-services.AddHttpClient<SunBloomAdminClient>(
-    client => client.Timeout = TimeSpan.FromSeconds(60));
+// Registered as singletons on purpose. AddHttpClient<T> would register the typed client
+// as TRANSIENT, and both of these carry state across calls that must survive: the admin
+// client holds the bearer token from sign-in, and the Gemini client holds the resolved
+// model version used for provenance. With transient registration the token is set on one
+// instance and every later request goes out unauthenticated — a 200 login followed by a
+// wall of 401s. Holding a factory HttpClient for the process lifetime risks DNS
+// staleness in a long-running service; this is a CLI that exits in minutes.
+services.AddSingleton<SunBloomAdminClient>(provider => new SunBloomAdminClient(
+    provider.GetRequiredService<IHttpClientFactory>().CreateClient(AdminClientName),
+    provider.GetRequiredService<SunBloomOptions>(),
+    provider.GetRequiredService<ILogger<SunBloomAdminClient>>()));
+
+services.AddSingleton<IStructuredCompletion>(provider => new GeminiStructuredCompletion(
+    provider.GetRequiredService<IHttpClientFactory>().CreateClient(GeminiClientName),
+    provider.GetRequiredService<GeminiOptions>(),
+    provider.GetRequiredService<ILogger<GeminiStructuredCompletion>>()));
 
 services.AddSingleton<SkillGenerator>();
 
@@ -133,4 +149,8 @@ static void PrintUsage()
 }
 
 /// <summary>Anchor for user-secrets assembly lookup.</summary>
-internal sealed partial class Program;
+internal sealed partial class Program
+{
+    internal const string GeminiClientName = "gemini";
+    internal const string AdminClientName = "sunbloom-admin";
+}

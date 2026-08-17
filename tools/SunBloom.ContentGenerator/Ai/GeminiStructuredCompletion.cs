@@ -11,8 +11,17 @@ internal sealed class GeminiOptions
 
     public string ApiKey { get; set; } = string.Empty;
 
-    /// <summary>Recorded as provenance on every skill this produces.</summary>
-    public string Model { get; set; } = "gemini-2.5-flash";
+    /// <summary>
+    /// The model to call. Defaults to the moving <c>-latest</c> alias deliberately.
+    /// </summary>
+    /// <remarks>
+    /// Pinned Gemini versions get retired for new API keys — <c>gemini-2.5-flash</c> still
+    /// appears in the models list but returns 404 with "no longer available to new users".
+    /// An alias cannot rot that way. Provenance stays exact regardless, because the
+    /// resolved <c>modelVersion</c> from each response is what gets recorded, not this
+    /// string. Note the free tier covers Flash but not Pro, which returns 429.
+    /// </remarks>
+    public string Model { get; set; } = "gemini-flash-latest";
 
     public string BaseUrl { get; set; } = "https://generativelanguage.googleapis.com/v1beta";
 
@@ -40,7 +49,19 @@ internal sealed class GeminiStructuredCompletion(
 {
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 
-    public string ModelId => options.Model;
+    private string? _resolvedModel;
+
+    /// <summary>
+    /// The model recorded as provenance: the concrete version the API actually served,
+    /// once known, falling back to the configured name before the first call.
+    /// </summary>
+    /// <remarks>
+    /// Configuration names a moving alias so it cannot rot; provenance needs the exact
+    /// model that produced a given skill, or "which model wrote this?" becomes
+    /// unanswerable the moment the alias advances. Gemini returns <c>modelVersion</c> on
+    /// every response, so the two needs are met separately rather than traded off.
+    /// </remarks>
+    public string ModelId => _resolvedModel ?? options.Model;
 
     public async Task<CompletionResult<T>> CompleteAsync<T>(
         string systemInstruction,
@@ -125,6 +146,13 @@ internal sealed class GeminiStructuredCompletion(
         try
         {
             var root = JsonNode.Parse(payload);
+
+            // Capture the concrete version behind the alias, for provenance.
+            if (root?["modelVersion"]?.GetValue<string>() is { Length: > 0 } served)
+            {
+                _resolvedModel = served;
+            }
+
             var candidate = root?["candidates"]?[0];
 
             // A safety block returns 200 with no content parts — treat it as a failure
