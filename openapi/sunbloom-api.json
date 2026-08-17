@@ -234,10 +234,208 @@
                     }
                 }
             }
+        },
+        "/api/v1/admin/skills": {
+            "post": {
+                "tags": [
+                    "Skill administration"
+                ],
+                "summary": "Create a skill. Omit generation info to mark it human-authored.",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateSkillRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SkillAdminView"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/skills/relationships": {
+            "post": {
+                "tags": [
+                    "Skill administration"
+                ],
+                "summary": "Relate two skills. Prerequisite edges that would create a cycle are rejected.",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateSkillRelationshipRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SkillSummary"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/skills/pending": {
+            "get": {
+                "tags": [
+                    "Skill administration"
+                ],
+                "summary": "The review queue, shallowest containment depth first.",
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "format": "int32",
+                            "default": 50
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PendingReviewPage"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/skills/{slug}/approve": {
+            "post": {
+                "tags": [
+                    "Skill administration"
+                ],
+                "summary": "Approve a draft skill.",
+                "parameters": [
+                    {
+                        "name": "slug",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "oneOf": [
+                                    {
+                                        "type": "null"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/ReviewDecisionRequest"
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SkillAdminView"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/skills/{slug}/reject": {
+            "post": {
+                "tags": [
+                    "Skill administration"
+                ],
+                "summary": "Reject a draft skill.",
+                "parameters": [
+                    {
+                        "name": "slug",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "oneOf": [
+                                    {
+                                        "type": "null"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/ReviewDecisionRequest"
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SkillAdminView"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     },
     "components": {
         "schemas": {
+            "AiGenerationInfo": {
+                "required": [
+                    "model",
+                    "promptVersion"
+                ],
+                "type": "object",
+                "properties": {
+                    "model": {
+                        "type": "string"
+                    },
+                    "promptVersion": {
+                        "type": "string"
+                    }
+                }
+            },
             "AuthResponse": {
                 "required": [
                     "accessToken",
@@ -254,15 +452,79 @@
                         "type": "string"
                     },
                     "expiresInSeconds": {
-                        "pattern": "^-?(?:0|[1-9]\\d*)$",
-                        "type": [
-                            "integer",
-                            "string"
-                        ],
+                        "type": "integer",
                         "format": "int32"
                     },
                     "user": {
                         "$ref": "#/components/schemas/UserResponse"
+                    }
+                }
+            },
+            "CreateSkillRelationshipRequest": {
+                "required": [
+                    "fromSlug",
+                    "toSlug",
+                    "type",
+                    "strength"
+                ],
+                "type": "object",
+                "properties": {
+                    "fromSlug": {
+                        "type": "string"
+                    },
+                    "toSlug": {
+                        "type": "string"
+                    },
+                    "type": {
+                        "type": "string"
+                    },
+                    "strength": {
+                        "type": "number",
+                        "format": "double"
+                    }
+                }
+            },
+            "CreateSkillRequest": {
+                "required": [
+                    "slug",
+                    "name",
+                    "kind",
+                    "description",
+                    "parentSlug",
+                    "generation"
+                ],
+                "type": "object",
+                "properties": {
+                    "slug": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "kind": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": [
+                            "null",
+                            "string"
+                        ]
+                    },
+                    "parentSlug": {
+                        "type": [
+                            "null",
+                            "string"
+                        ]
+                    },
+                    "generation": {
+                        "oneOf": [
+                            {
+                                "type": "null"
+                            },
+                            {
+                                "$ref": "#/components/schemas/AiGenerationInfo"
+                            }
+                        ]
                     }
                 }
             },
@@ -282,12 +544,7 @@
                         ]
                     },
                     "status": {
-                        "pattern": "^-?(?:0|[1-9]\\d*)$",
-                        "type": [
-                            "null",
-                            "integer",
-                            "string"
-                        ],
+                        "type": "integer",
                         "format": "int32"
                     },
                     "detail": {
@@ -328,6 +585,30 @@
                     }
                 }
             },
+            "PendingReviewPage": {
+                "required": [
+                    "items",
+                    "totalPending",
+                    "depth"
+                ],
+                "type": "object",
+                "properties": {
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/SkillAdminView"
+                        }
+                    },
+                    "totalPending": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "depth": {
+                        "type": "integer",
+                        "format": "int32"
+                    }
+                }
+            },
             "RefreshRequest": {
                 "required": [
                     "refreshToken"
@@ -358,6 +639,107 @@
                         "type": "string"
                     },
                     "timeZone": {
+                        "type": [
+                            "null",
+                            "string"
+                        ]
+                    }
+                }
+            },
+            "ReviewDecisionRequest": {
+                "required": [
+                    "notes"
+                ],
+                "type": "object",
+                "properties": {
+                    "notes": {
+                        "type": [
+                            "null",
+                            "string"
+                        ]
+                    }
+                }
+            },
+            "SkillAdminView": {
+                "required": [
+                    "id",
+                    "slug",
+                    "name",
+                    "description",
+                    "kind",
+                    "parentSlug",
+                    "isActive",
+                    "reviewState",
+                    "generationSource",
+                    "generatorModel",
+                    "generatorPromptVersion",
+                    "generatedAt",
+                    "reviewedAt",
+                    "reviewNotes"
+                ],
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "slug": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": [
+                            "null",
+                            "string"
+                        ]
+                    },
+                    "kind": {
+                        "type": "string"
+                    },
+                    "parentSlug": {
+                        "type": [
+                            "null",
+                            "string"
+                        ]
+                    },
+                    "isActive": {
+                        "type": "boolean"
+                    },
+                    "reviewState": {
+                        "type": "string"
+                    },
+                    "generationSource": {
+                        "type": "string"
+                    },
+                    "generatorModel": {
+                        "type": [
+                            "null",
+                            "string"
+                        ]
+                    },
+                    "generatorPromptVersion": {
+                        "type": [
+                            "null",
+                            "string"
+                        ]
+                    },
+                    "generatedAt": {
+                        "type": [
+                            "null",
+                            "string"
+                        ],
+                        "format": "date-time"
+                    },
+                    "reviewedAt": {
+                        "type": [
+                            "null",
+                            "string"
+                        ],
+                        "format": "date-time"
+                    },
+                    "reviewNotes": {
                         "type": [
                             "null",
                             "string"
@@ -492,7 +874,8 @@
                     "id",
                     "email",
                     "displayName",
-                    "timeZone"
+                    "timeZone",
+                    "roles"
                 ],
                 "type": "object",
                 "properties": {
@@ -508,6 +891,12 @@
                     },
                     "timeZone": {
                         "type": "string"
+                    },
+                    "roles": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
                     }
                 }
             }
@@ -519,6 +908,9 @@
         },
         {
             "name": "Skills"
+        },
+        {
+            "name": "Skill administration"
         }
     ]
 }

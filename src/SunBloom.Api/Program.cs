@@ -8,6 +8,7 @@ using OpenTelemetry.Trace;
 using Serilog;
 using SunBloom.Api.Health;
 using SunBloom.Api.Modules;
+using SunBloom.Api.OpenApi;
 using SunBloom.Api.Security;
 using SunBloom.SharedKernel.Modules;
 using SunBloom.SharedKernel.Ownership;
@@ -42,7 +43,7 @@ try
 
     // RFC 9457 Problem Details for every error response.
     builder.Services.AddProblemDetails();
-    builder.Services.AddOpenApi();
+    builder.Services.AddOpenApi(options => options.AddSchemaTransformer<NumericSchemaTransformer>());
 
     builder.Services.AddHealthChecks()
         .AddCheck("self", () => HealthCheckResult.Healthy("Process is running."), tags: ["live"])
