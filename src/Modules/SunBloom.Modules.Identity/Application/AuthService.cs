@@ -173,7 +173,7 @@ internal sealed class AuthService(
             tokenService.CreateAccessToken(user),
             rawRefreshToken,
             tokenService.AccessTokenLifetimeSeconds,
-            new UserResponse(user.Id, user.Email, user.DisplayName, user.TimeZone));
+            new UserResponse(user.Id, user.Email, user.DisplayName, user.TimeZone, user.Roles));
 
     private async Task RevokeFamilyAsync(Guid familyId, DateTimeOffset now, CancellationToken ct)
     {

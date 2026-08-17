@@ -13,6 +13,7 @@ using SunBloom.Modules.Identity.Application;
 using SunBloom.Modules.Identity.Domain;
 using SunBloom.Modules.Identity.Endpoints;
 using SunBloom.Modules.Identity.Infrastructure;
+using SunBloom.SharedKernel.Authorization;
 using SunBloom.SharedKernel.Modules;
 
 namespace SunBloom.Modules.Identity;
@@ -38,6 +39,7 @@ public sealed class IdentityModule : IModule
             .UseSnakeCaseNamingConvention());
 
         services.AddScoped<IModuleDatabaseMigrator, IdentityDatabaseMigrator>();
+        services.AddScoped<IModuleSeeder, IdentitySeeder>();
 
         // PasswordHasher only - not the full ASP.NET Core Identity stack. See ADR-0011.
         services.AddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();
@@ -106,9 +108,15 @@ public sealed class IdentityModule : IModule
                     // long past their stated lifetime.
                     ClockSkew = TimeSpan.FromSeconds(30),
                     NameClaimType = JwtRegisteredClaimNames.Name,
+
+                    // Must match the claim type TokenService writes; the default is a
+                    // long WS-Federation URI that our short "role" claims would not hit.
+                    RoleClaimType = TokenService.RoleClaimType,
                 };
             });
 
-        services.AddAuthorization();
+        services.AddAuthorizationBuilder()
+            .AddPolicy(SunBloomPolicies.ContentAdmin, policy =>
+                policy.RequireAuthenticatedUser().RequireRole(SunBloomRoles.ContentAdmin));
     }
 }

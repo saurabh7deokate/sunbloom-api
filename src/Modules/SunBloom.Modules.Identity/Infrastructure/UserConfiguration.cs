@@ -28,6 +28,14 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(user => user.EmailConfirmed).HasDefaultValue(false);
         builder.Property(user => user.IsActive).HasDefaultValue(true);
 
+        // Backing field, not the read-only Roles property — the entity owns mutation
+        // through GrantRole/RevokeRole. Npgsql maps List<string> to a native text[].
+        builder.Property<List<string>>("_roles")
+            .HasColumnName("roles")
+            .HasColumnType("text[]")
+            .HasDefaultValueSql("ARRAY[]::text[]")
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
+
         builder.Property(user => user.CreatedAt).IsRequired();
         builder.Property(user => user.UpdatedAt).IsRequired();
     }

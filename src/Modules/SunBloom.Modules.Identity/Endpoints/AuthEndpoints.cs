@@ -123,13 +123,12 @@ internal static class AuthEndpoints
             return TypedResults.Unauthorized();
         }
 
-        var user = await db.Users
-            .Where(candidate => candidate.Id == userId)
-            .Select(candidate => new UserResponse(
-                candidate.Id, candidate.Email, candidate.DisplayName, candidate.TimeZone))
-            .FirstOrDefaultAsync(ct);
+        var user = await db.Users.FirstOrDefaultAsync(candidate => candidate.Id == userId, ct);
 
-        return user is null ? TypedResults.Unauthorized() : TypedResults.Ok(user);
+        return user is null
+            ? TypedResults.Unauthorized()
+            : TypedResults.Ok(new UserResponse(
+                user.Id, user.Email, user.DisplayName, user.TimeZone, user.Roles));
     }
 
     private static Dictionary<string, string[]> ValidateRegistration(RegisterRequest request)

@@ -31,8 +31,14 @@ public sealed record AuthResponse(
     int ExpiresInSeconds,
     UserResponse User);
 
+/// <param name="Roles">
+/// Role names, e.g. <c>ContentAdmin</c>. Surfaced so the UI can show or hide admin
+/// navigation — it is a display hint, never the authorization decision, which the API
+/// always makes from the token.
+/// </param>
 public sealed record UserResponse(
     Guid Id,
     string Email,
     string DisplayName,
-    string TimeZone);
+    string TimeZone,
+    IReadOnlyList<string> Roles);

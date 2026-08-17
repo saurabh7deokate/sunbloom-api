@@ -12,6 +12,9 @@ namespace SunBloom.Modules.Identity.Application;
 /// <summary>Issues access tokens and opaque refresh tokens.</summary>
 internal sealed class TokenService(IOptions<JwtOptions> options, IClock clock)
 {
+    /// <summary>Claim type carrying role names. Must match <c>RoleClaimType</c> on validation.</summary>
+    public const string RoleClaimType = "role";
+
     private readonly JwtOptions _options = options.Value;
 
     public int AccessTokenLifetimeSeconds => _options.AccessTokenMinutes * 60;
@@ -22,6 +25,18 @@ internal sealed class TokenService(IOptions<JwtOptions> options, IClock clock)
     {
         var now = clock.UtcNow;
 
+        var claims = new List<Claim>
+        {
+            new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+            new(JwtRegisteredClaimNames.Email, user.Email),
+            new(JwtRegisteredClaimNames.Name, user.DisplayName),
+            new(JwtRegisteredClaimNames.Jti, Guid.CreateVersion7().ToString()),
+        };
+
+        // Short claim type, matching RoleClaimType on the validation parameters. With
+        // MapInboundClaims disabled, whatever name is written here is the name read back.
+        claims.AddRange(user.Roles.Select(role => new Claim(RoleClaimType, role)));
+
         var descriptor = new SecurityTokenDescriptor
         {
             Issuer = _options.Issuer,
@@ -29,13 +44,7 @@ internal sealed class TokenService(IOptions<JwtOptions> options, IClock clock)
             IssuedAt = now.UtcDateTime,
             NotBefore = now.UtcDateTime,
             Expires = now.AddMinutes(_options.AccessTokenMinutes).UtcDateTime,
-            Subject = new ClaimsIdentity(
-            [
-                new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-                new Claim(JwtRegisteredClaimNames.Email, user.Email),
-                new Claim(JwtRegisteredClaimNames.Name, user.DisplayName),
-                new Claim(JwtRegisteredClaimNames.Jti, Guid.CreateVersion7().ToString()),
-            ]),
+            Subject = new ClaimsIdentity(claims),
             SigningCredentials = new SigningCredentials(
                 new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.SigningKey)),
                 SecurityAlgorithms.HmacSha256),

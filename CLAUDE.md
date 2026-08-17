@@ -160,5 +160,28 @@ Next: **1.5 — content generator CLI and review workflow**. See `docs/ROADMAP.m
 career path for the first complete vertical is **.NET Backend Developer**, chosen because
 the owner can personally judge whether the generated content is any good.
 
-**Known gap:** `SkillGraphService.AddRelationshipAsync` is untested — it has no callers
-until write endpoints arrive in 1.5, and gets an integration test then.
+## Content administration
+
+Authoring and review endpoints live under `/api/v1/admin/skills` and require the
+`ContentAdmin` role (`SunBloomPolicies.ContentAdmin`). Roles are a `text[]` column on
+`identity.users` — ADR-0011 declined the full Identity role stack, so this is the whole
+model.
+
+To grant yourself the role, add your email to bootstrap config and restart:
+
+```bash
+dotnet user-secrets set "Bootstrap:ContentAdminEmails:0" "you@example.com" --project src/SunBloom.Api
+```
+
+The seeder grants on every Development startup and **never revokes** — removing an email
+does not strip the role, because a config edit should not silently de-privilege a working
+account.
+
+**The content generator writes through these endpoints, not the database.** One write
+path means generated content passes the same validation as anything else — prerequisite
+cycle rejection above all.
+
+**Known gap:** `SkillAdminService` and `AddRelationshipAsync` have no *automated* test.
+Both were verified manually end to end (create → cycle rejected with 422 → approve →
+visible to learners), but the automated integration test needs a test-database harness
+that does not exist yet. Still owed.

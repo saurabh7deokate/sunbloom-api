@@ -29,7 +29,12 @@ public sealed class CatalogModule : IModule
         services.AddScoped<IModuleDatabaseMigrator, CatalogDatabaseMigrator>();
         services.AddScoped<IModuleSeeder, CatalogSeeder>();
         services.AddScoped<SkillGraphService>();
+        services.AddScoped<SkillAdminService>();
     }
 
-    public void MapEndpoints(IEndpointRouteBuilder endpoints) => SkillEndpoints.Map(endpoints);
+    public void MapEndpoints(IEndpointRouteBuilder endpoints)
+    {
+        SkillEndpoints.Map(endpoints);
+        SkillAdminEndpoints.Map(endpoints);
+    }
 }
